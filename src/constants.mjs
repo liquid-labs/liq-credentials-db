@@ -6,8 +6,8 @@ const purposes = {
 }
 
 const types = {
-  SSH_KEY_PAIR: 'ssh',
-  AUTH_TOKEN: 'token'
+  SSH_KEY_PAIR : 'ssh',
+  AUTH_TOKEN   : 'token'
 }
 
 const CRED_SPECS = [

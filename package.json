@@ -21,6 +21,7 @@
     "core-js-pure": "^3.27.2"
   },
   "dependencies": {
+    "http-errors": "^2.0.0",
     "shelljs": "^0.8.5"
   }
 }

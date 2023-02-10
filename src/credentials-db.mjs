@@ -1,6 +1,7 @@
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
+import createError from 'http-errors'
 import structuredClone from 'core-js-pure/actual/structured-clone'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
@@ -55,10 +56,10 @@ class CredentialsDB {
   }
 
   /**
-   * Adds credential data at `srcPath` to the credential database. The credential type is specified by the `key`. 
-   * Attempting to import a credential with the same `key` as an existing credential will result in an error unless 
-   * `replace` is`true`. By default, the credential file(s) are left in place, but may be copied (to a centralized 
-   * location) by designating `destPath'.`By deault, the credential is verified as providing access to the associated 
+   * Adds credential data at `srcPath` to the credential database. The credential type is specified by the `key`.
+   * Attempting to import a credential with the same `key` as an existing credential will result in an error unless
+   * `replace` is`true`. By default, the credential file(s) are left in place, but may be copied (to a centralized
+   * location) by designating `destPath'.`By deault, the credential is verified as providing access to the associated
    * service unless `noVerify` is specified.
    */
   async import({ destPath, key, noVerify = false, replace, srcPath }) {
@@ -110,21 +111,19 @@ class CredentialsDB {
 
   getToken(key) {
     if (!(key in purposes)) throw createError.BadRequest(`'${key}' is not a valid credential.`)
-    if (!(key in this.#db))
-      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`)
+    if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
 
     const detail = this.detail(key)
-    if (detail.type !== types.AUTH_TOKEN)
-      throw createError.BadRequest(`Credential '${key}' does not provide an authorization token.`)
+    if (detail.type !== types.AUTH_TOKEN) { throw createError.BadRequest(`Credential '${key}' does not provide an authorization token.`) }
 
     if (key === purposes.GITHUB_API) {
       // TODO: it's a yaml file, which is the FJSON default, so this will work. In future, we should implement a 'readAs' and be specific.
       let credentialData
       try {
-        credentialData = readFJSON(detail.files[0], { readAs: 'yaml' })
+        credentialData = readFJSON(detail.files[0], { readAs : 'yaml' })
       }
       catch (e) {
-        throw createError.InternalServerError(`There was a problem reading the ${key} credential file`, { cause: e })
+        throw createError.InternalServerError(`There was a problem reading the ${key} credential file`, { cause : e })
       }
       const token = credentialData?.['github.com']?.[0]?.oauth_token
       if (token === undefined) throw createError.NotFound(`The ${key} token was not defined in the credential source.`)

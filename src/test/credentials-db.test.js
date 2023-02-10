@@ -7,13 +7,13 @@ describe('CredentialsDB', () => {
     test('attempts to load DB from cache', () => {
       let getWasCalledWith
       const app = {
-        liqHome: () => 'home'
+        liqHome : () => 'home'
       }
       const cache = {
         get(key) { getWasCalledWith = key; return {} }
       }
 
-      const credDB = new CredentialsDB({ app, cache })
+      new CredentialsDB({ app, cache }) // eslint-disable-line no-new
       expect(getWasCalledWith).toBe(CREDS_DB_CACHE_KEY)
     })
   })
