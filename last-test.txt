@@ -6,12 +6,12 @@ PASS test-staging/test/credentials-db.test.js
 --------------------|---------|----------|---------|---------|----------------------------
 File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s          
 --------------------|---------|----------|---------|---------|----------------------------
-All files           |   25.82 |    11.11 |    37.5 |   30.61 |                            
+All files           |   26.31 |    11.11 |    37.5 |   31.95 |                            
  constants.mjs      |     100 |      100 |     100 |     100 |                            
- credentials-db.mjs |   17.64 |    11.11 |   33.33 |   21.83 | 31-32,39-54,64-108,112-169 
+ credentials-db.mjs |   18.24 |    11.11 |   33.33 |   23.25 | 32-33,40-55,65-109,113-168 
 --------------------|---------|----------|---------|---------|----------------------------
 Test Suites: 1 passed, 1 total
 Tests:       1 passed, 1 total
 Snapshots:   0 total
-Time:        0.364 s, estimated 1 s
+Time:        0.544 s, estimated 1 s
 Ran all test suites matching /.\/test-staging/i.
