@@ -13,5 +13,14 @@
   "bugs": {
     "url": "https://github.com/liquid-labs/liq-credentials-db/issues"
   },
-  "homepage": "https://github.com/liquid-labs/liq-credentials-db#readme"
+  "homepage": "https://github.com/liquid-labs/liq-credentials-db#readme",
+  "devDependencies": {
+    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
+    "@liquid-labs/federated-json": "^1.0.0-alpha.33",
+    "@liquid-labs/github-toolkit": "^1.0.0-alpha.4",
+    "core-js-pure": "^3.27.2"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
+  }
 }
