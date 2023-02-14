@@ -18,7 +18,7 @@ class CredentialsDB {
   #dbPath
 
   constructor({ app, cache }) {
-    const liqHome = app.liqHome()
+    const liqHome = app.liq.home()
     this.#dbPath = `${liqHome}/credentials/db.yaml`
 
     this.#cache = cache
@@ -110,7 +110,7 @@ class CredentialsDB {
   }
 
   getToken(key) {
-    if (!(key in purposes)) throw createError.BadRequest(`'${key}' is not a valid credential.`)
+    if (!Object.values(purposes).includes(key)) throw createError.BadRequest(`'${key}' is not a valid credential.`)
     if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
 
     const detail = this.detail(key)
