@@ -7,7 +7,9 @@ describe('CredentialsDB', () => {
     test('attempts to load DB from cache', () => {
       let getWasCalledWith
       const app = {
-        liqHome : () => 'home'
+        liq : {
+          home : () => 'home'
+        }
       }
       const cache = {
         get(key) { getWasCalledWith = key; return {} }
