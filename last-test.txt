@@ -1,0 +1,17 @@
+PASS test-staging/test/credentials-db.test.js
+  CredentialsDB
+    constructor
+      ✓ attempts to load DB from cache (1 ms)
+
+--------------------|---------|----------|---------|---------|-------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------------|---------|----------|---------|---------|-------------------
+All files           |   30.35 |    15.25 |   30.76 |   29.78 |                   
+ constants.mjs      |     100 |      100 |     100 |     100 |                   
+ credentials-db.mjs |   19.58 |    15.25 |      25 |   20.48 | 32-33,40-168      
+--------------------|---------|----------|---------|---------|-------------------
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        0.301 s, estimated 1 s
+Ran all test suites matching /.\/test-staging/i.
