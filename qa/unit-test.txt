@@ -1,0 +1,20 @@
+Test git rev: cf8dd88df8ffae4555ecd6f3b0e4b9003f3ed497
+PASS test/credentials-db.test.js
+  CredentialsDB
+    constructor
+      ✓ attempts to load DB from cache (2 ms)
+    import
+      ✓ can import a GitHub API token (without verification) (5 ms)
+
+--------------------|---------|----------|---------|---------|------------------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s            
+--------------------|---------|----------|---------|---------|------------------------------
+All files           |   56.95 |    48.19 |   81.25 |   65.97 |                              
+ constants.mjs      |     100 |      100 |     100 |     100 |                              
+ credentials-db.mjs |    52.2 |    48.19 |      80 |   61.62 | 78-90,96,104-107,129,137-171 
+--------------------|---------|----------|---------|---------|------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        0.451 s, estimated 1 s
+Ran all test suites.
