@@ -6,6 +6,7 @@ import structuredClone from 'core-js-pure/actual/structured-clone'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
 import { checkGitHubAPIAccess, checkGitHubSSHAccess } from '@liquid-labs/github-toolkit'
+import { LIQ_HOME } from '@liquid-labs/liq-defaults'
 
 import { CREDS_DB_CACHE_KEY, CRED_SPECS, credStatus, purposes, types } from './constants'
 
@@ -17,9 +18,9 @@ class CredentialsDB {
   #db
   #dbPath
 
-  constructor({ app, cache }) {
-    const liqHome = app.liq.home()
-    this.#dbPath = `${liqHome}/credentials/db.yaml`
+  constructor({ cache }) {
+    this.#dbPath = process.env.LIQ_CREDENTIALS_DB_PATH
+      || /* default */ fsPath.join(LIQ_HOME(), 'credentials/db.yaml')
 
     this.#cache = cache
 
@@ -64,11 +65,14 @@ class CredentialsDB {
    */
   async import({ destPath, key, noVerify = false, replace, srcPath }) {
     const credSpec = CRED_SPECS.find((c) => c.key === key)
+    console.log('credSpec:', credSpec) // DEBUG
     if (credSpec === undefined) throw new Error(`Cannot import unknown credential type '${key}'.`)
-
+    console.log(this.#db) // DEBUG
     if (this.#db[key] !== undefined && replace !== true) { throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`) }
 
-    if (!(credSpec.type in types)) { throw new Error(`Do not know how to handle credential type '${credSpec.type}' on import.`) }
+    if (!Object.values(types).includes(credSpec.type)) {
+      throw new Error(`Do not know how to handle credential type '${credSpec.type}' on import.`)
+    }
 
     const files = []
 
@@ -96,6 +100,7 @@ class CredentialsDB {
     }
 
     this.#db[key] = Object.assign({ files, status : credStatus.SET_BUT_UNTESTED }, CRED_SPECS[key])
+
     if (noVerify === false) {
       try {
         this.verifyCreds({ keys : [key], throwOnError : true })
