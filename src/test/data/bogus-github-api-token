@@ -1,0 +1,4 @@
+github.com:
+- user: foobar
+  oauth_token: ghp_abcdefghijklmnopqrstuvwxyz0123456789
+  protocol: https
