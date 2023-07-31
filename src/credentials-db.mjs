@@ -65,9 +65,7 @@ class CredentialsDB {
    */
   async import({ destPath, key, noVerify = false, replace, srcPath }) {
     const credSpec = CRED_SPECS.find((c) => c.key === key)
-    console.log('credSpec:', credSpec) // DEBUG
     if (credSpec === undefined) throw new Error(`Cannot import unknown credential type '${key}'.`)
-    console.log(this.#db) // DEBUG
     if (this.#db[key] !== undefined && replace !== true) { throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`) }
 
     if (!Object.values(types).includes(credSpec.type)) {
