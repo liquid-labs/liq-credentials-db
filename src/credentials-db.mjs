@@ -2,7 +2,6 @@ import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
 import createError from 'http-errors'
-import structuredClone from 'core-js-pure/actual/structured-clone'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
 import { checkGitHubAPIAccess, checkGitHubSSHAccess } from '@liquid-labs/github-toolkit'
