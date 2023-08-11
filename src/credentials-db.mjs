@@ -46,15 +46,16 @@ class CredentialsDB {
     writeFJSON({ file : this.#dbPath, data : writableDB })
   }
 
-  detail(key, { required = false } = {}) {
+  detail(key, { required = false, retainFuncs = false } = {}) {
     if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) { throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`) }
     if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
 
     const baseData = this.getCredSpec(key)
     if (baseData === undefined) return
-    // else
-    delete baseData.verifyFunc
-    delete baseData.getTokenFunc
+    else if (retainFuncs !== true) {
+      delete baseData.verifyFunc
+      delete baseData.getTokenFunc
+    }
 
     return Object.assign({ status : status.NOT_SET }, baseData, this.#db[key])
   }
@@ -124,10 +125,10 @@ class CredentialsDB {
   }
 
   getToken(key) {
-    const detail = this.detail(key, { required : true })
+    const detail = this.detail(key, { required : true, retainFuncs : true })
     if (detail.type !== types.AUTH_TOKEN) { throw createError.BadRequest(`Credential '${specName(detail)}' does not provide an authorization token.`) }
 
-    if (detail.getTokenFunc === undefined) { throw createError.NotImplemented(`Credential '${specName}' does not support token retrieval.`) }
+    if (detail.getTokenFunc === undefined) { throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`) }
 
     return detail.getTokenFunc({ files : detail.files })
   }
