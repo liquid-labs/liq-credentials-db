@@ -4,10 +4,9 @@ import * as fsPath from 'node:path'
 import createError from 'http-errors'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
-import { checkGitHubAPIAccess, checkGitHubSSHAccess } from '@liquid-labs/github-toolkit'
 import { LIQ_HOME } from '@liquid-labs/liq-defaults'
 
-import { CREDS_DB_CACHE_KEY, CRED_SPECS, credStatus, purposes, types } from './constants'
+import { CREDS_DB_CACHE_KEY, CREDS_PATH_STEM, status, types } from './constants'
 
 class CredentialsDB {
   static allFields = ['key', 'name', 'description', 'status', 'files']
@@ -16,10 +15,11 @@ class CredentialsDB {
   #cache
   #db
   #dbPath
+  #supportedCredentials = []
 
   constructor({ cache }) {
     this.#dbPath = process.env.LIQ_CREDENTIALS_DB_PATH
-      || /* default */ fsPath.join(LIQ_HOME(), 'credentials/db.yaml')
+      || /* default */ fsPath.join(LIQ_HOME(), CREDS_PATH_STEM, 'db.yaml')
 
     this.#cache = cache
 
@@ -38,21 +38,33 @@ class CredentialsDB {
 
   writeDB() {
     const writableDB = structuredClone(this.#db)
-    for (const entry of Object.entries(this.#db)) {
-      if (!(entry.key in CRED_SPECS)) {
-        delete entry.description
-        delete entry.name
-      }
+    for (const spec of Object.values(writableDB)) {
+      delete spec.description
+      delete spec.name
     }
 
     writeFJSON({ file : this.#dbPath, data : writableDB })
   }
 
-  detail(key) {
-    const baseData = CRED_SPECS.find((s) => s.key === key)
-    if (baseData === undefined) return baseData
+  detail(key, { required = false, retainFuncs = false } = {}) {
+    if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) { throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`) }
+    if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
 
-    return Object.assign({ status : credStatus.NOT_SET }, baseData, this.#db[key])
+    const baseData = this.getCredSpec(key)
+    if (baseData === undefined) return
+    else if (retainFuncs !== true) {
+      delete baseData.verifyFunc
+      delete baseData.getTokenFunc
+    }
+
+    return Object.assign({ status : status.NOT_SET }, baseData, this.#db[key])
+  }
+
+  getCredSpec(key, { required = false, msgGen = ({ key }) => `Unknown credential type '${key}'.` } = {}) {
+    const spec = this.#supportedCredentials.find((c) => c.key === key)
+    if (required === true && spec === undefined) throw new Error(msgGen({ key }))
+
+    return Object.assign({}, spec)
   }
 
   /**
@@ -63,8 +75,9 @@ class CredentialsDB {
    * service unless `noVerify` is specified.
    */
   async import({ destPath, key, noVerify = false, replace, srcPath }) {
-    const credSpec = CRED_SPECS.find((c) => c.key === key)
-    if (credSpec === undefined) throw new Error(`Cannot import unknown credential type '${key}'.`)
+    const credSpec = this.getCredSpec(key,
+      { required : true, msgGen : ({ key }) => `Cannot import unknown credential type '${key}'.` })
+
     if (this.#db[key] !== undefined && replace !== true) { throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`) }
 
     if (!Object.values(types).includes(credSpec.type)) {
@@ -96,7 +109,7 @@ class CredentialsDB {
       }
     }
 
-    this.#db[key] = Object.assign({ files, status : credStatus.SET_BUT_UNTESTED }, CRED_SPECS[key])
+    this.#db[key] = Object.assign({}, credSpec, { files, status : status.SET_BUT_UNTESTED })
 
     if (noVerify === false) {
       try {
@@ -112,55 +125,56 @@ class CredentialsDB {
   }
 
   getToken(key) {
-    if (!Object.values(purposes).includes(key)) throw createError.BadRequest(`'${key}' is not a valid credential.`)
-    if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
+    const detail = this.detail(key, { required : true, retainFuncs : true })
+    if (detail.type !== types.AUTH_TOKEN) { throw createError.BadRequest(`Credential '${specName(detail)}' does not provide an authorization token.`) }
 
-    const detail = this.detail(key)
-    if (detail.type !== types.AUTH_TOKEN) { throw createError.BadRequest(`Credential '${key}' does not provide an authorization token.`) }
+    if (detail.getTokenFunc === undefined) { throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`) }
 
-    if (key === purposes.GITHUB_API) {
-      // TODO: it's a yaml file, which is the FJSON default, so this will work. In future, we should implement a 'readAs' and be specific.
-      let credentialData
-      try {
-        credentialData = readFJSON(detail.files[0], { readAs : 'yaml' })
-      }
-      catch (e) {
-        throw createError.InternalServerError(`There was a problem reading the ${key} credential file`, { cause : e })
-      }
-      const token = credentialData?.['github.com']?.[0]?.oauth_token
-      if (token === undefined) throw createError.NotFound(`The ${key} token was not defined in the credential source.`)
-
-      return token
-    }
-    else {
-      throw createError.NotImplemented(`Credential '${key}' is a known type, but token retrieval is not implemented.`)
-    }
+    return detail.getTokenFunc({ files : detail.files })
   }
 
   list() {
-    return CRED_SPECS.map((s) => this.detail(s.key))
+    return Object.keys(this.#db).map((key) => this.detail(key))
+  }
+
+  listSupported() {
+    return this.#supportedCredentials.map((e) => {
+      const newEntry = Object.assign({}, e)
+      newEntry.verifyFunc = !!newEntry.verifyFunc
+      newEntry.getTokenFunc = !!newEntry.getTokenFunc
+
+      return newEntry
+    })
+  }
+
+  registerCredentialType(credSpec) {
+    for (const field of ['key', 'name', 'type', 'verifyFunc']) {
+      if (!(field in credSpec)) {
+        throw createError.BadRequest(`Credentials spec '${specName(credSpec)}' missing field ${field}.`)
+      }
+    }
+
+    this.#supportedCredentials.push(Object.assign({}, credSpec))
   }
 
   verifyCreds({ keys, reVerify = false, throwOnError = false }) {
     const failed = []
 
-    for (const { files, key, name, status } of this.list()) {
-      if (status !== credStatus.NOT_SET && (status !== credStatus.SET_AND_VERIFIED || reVerify === true)
+    for (const key of keys || Object.keys(this.#db)) {
+      const { files, status : myStatus } = this.detail(key, { required : true })
+
+      if (myStatus !== status.NOT_SET && (myStatus !== status.SET_AND_VERIFIED || reVerify === true)
           && (keys === undefined || keys.includes(key))) {
         try {
-          if (key === purposes.GITHUB_API) {
-            checkGitHubAPIAccess({ filePath : files[0] })
-          }
-          else if (key === purposes.GITHUB_SSH) {
-            checkGitHubSSHAccess({ privKeyPath : files[0] })
-          }
-          else {
-            throw new Error(`Do not know how to verify '${name}' (${key}) credentials.`)
-          }
-          this.#db[key].status = credStatus.SET_AND_VERIFIED
+          const { verifyFunc } = this.getCredSpec(key, {
+            required : true,
+            msgGen   : ({ key }) => `Unknown credential '${key}' found in DB while attempting to verify credentials.`
+          })
+          verifyFunc({ files }) // will throw if there's a failure
+          this.#db[key].status = status.SET_AND_VERIFIED
         }
         catch (e) {
-          this.#db[key].status = credStatus.SET_BUT_INVALID
+          this.#db[key].status = status.SET_BUT_INVALID
           if (throwOnError === true) throw e
           // else
           failed.push(key)
@@ -170,6 +184,8 @@ class CredentialsDB {
     return failed
   }
 }
+
+const specName = ({ name, key }) => name || key || 'UNKNOWN'
 
 export {
   CredentialsDB
