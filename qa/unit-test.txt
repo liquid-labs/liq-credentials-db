@@ -1,0 +1,26 @@
+Test git rev: 04ce0f18aa1994ec567094eed4abfb43b93b71e3
+PASS test/credentials-db.test.js
+  CredentialsDB
+    constructor
+      ✓ attempts to load DB from cache (1 ms)
+    key lifecycle
+      ✓ import writes the updated DB by default
+      ✓ import performs verification by default
+      ✓ on import, 'srcPath' preserves original credential src by default
+      ✓ getToken() retrieves token for AUTH_TOKEN types (2 ms)
+      ✓ rejects importing same key when replace is false (1 ms)
+      ✓ can import replacement key (replace: true) (1 ms)
+      ✓ when 'destPath' is set, a copy of the key is made in the dir named by the key name (3 ms)
+
+--------------------|---------|----------|---------|---------|--------------------------------------------------------------------------------
+File                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                              
+--------------------|---------|----------|---------|---------|--------------------------------------------------------------------------------
+All files           |   72.51 |    68.11 |      60 |   73.94 |                                                                                
+ constants.mjs      |     100 |      100 |     100 |     100 |                                                                                
+ credentials-db.mjs |   70.73 |    68.11 |      60 |   72.56 | 42,47,68,71,84,111,117,121,130-135,146,160-161,171,175,183-197,204,222,228-231 
+--------------------|---------|----------|---------|---------|--------------------------------------------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        0.305 s, estimated 1 s
+Ran all test suites.
