@@ -108,7 +108,9 @@ class CredentialsDB {
     const credSpec = this.getCredSpec(key,
       { required : true, msgGen : ({ key }) => `Cannot import unknown credential type '${key}'.` })
 
-    if (this.#db[key] !== undefined && replace !== true) { throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`) }
+    if (this.#db[key] !== undefined && replace !== true) {
+      throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`)
+    }
 
     if (!Object.values(types).includes(credSpec.type)) {
       throw new Error(`Do not know how to handle credential type '${credSpec.type}' on import.`)
