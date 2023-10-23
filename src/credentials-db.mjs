@@ -31,7 +31,7 @@ class CredentialsDB {
     let db = this.#cache?.get(CREDS_DB_CACHE_KEY)
     if (!db) { // load the DB from path
       try {
-        const dataContents = readFileSync(this.#dbPath, { encoding: 'utf8' })
+        const dataContents = readFileSync(this.#dbPath, { encoding : 'utf8' })
         db = yaml.load(dataContents)
       }
       catch (e) {
@@ -64,11 +64,11 @@ class CredentialsDB {
   }
 
   detail(key, { required = false, retainFuncs = false } = {}) {
-    if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) { 
+    if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) {
       throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`)
     }
-    if (!(key in this.#db)) { 
-      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) 
+    if (!(key in this.#db)) {
+      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`)
     }
 
     const baseData = this.getCredSpec(key)
@@ -150,12 +150,12 @@ class CredentialsDB {
 
   async getToken(key) {
     const detail = this.detail(key, { required : true, retainFuncs : true })
-    if (detail.type !== types.AUTH_TOKEN) { 
+    if (detail.type !== types.AUTH_TOKEN) {
       throw createError.BadRequest(`Credential '${specName(detail)}' does not provide an authorization token.`)
     }
 
-    if (detail.getTokenFunc === undefined) { 
-      throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`) 
+    if (detail.getTokenFunc === undefined) {
+      throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`)
     }
 
     const result = detail.getTokenFunc({ files : detail.files })
