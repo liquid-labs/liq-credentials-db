@@ -94,15 +94,15 @@ class CredentialsDB {
    * `replace` is`true`. By default, the credential file(s) are left in place, but may be copied (to a centralized
    * location) by designating `destPath'.`By deault, the credential is verified as providing access to the associated
    * service unless `noVerify` is specified.
-   * 
+   *
    * Parameters:
-   * - `destPath`: (opt, path-string) if set, then the credentials at '`srcPath` are copied to `destPath`, which should 
+   * - `destPath`: (opt, path-string) if set, then the credentials at '`srcPath` are copied to `destPath`, which should
    *   be a directory path (unlike `srcPath` which points to a file)..
    * - `key`: (req, string) the key name
    * - `noVerify`: (opt, boolean; default: false) if true, then verification of the imported key is skipped
-   * - `replace`: (opt, boolean; default: false) must be set to true when replacing a key or results in error. 
+   * - `replace`: (opt, boolean; default: false) must be set to true when replacing a key or results in error.
    *   Likewise, must be 'false' with a new key or raises an error.
-   * - `srcPath`: (req, path-string) path to the credential file (or primary credential file). For 'SSH_KEY_PAIR' type 
+   * - `srcPath`: (req, path-string) path to the credential file (or primary credential file). For 'SSH_KEY_PAIR' type
    *   keys, the `srcPath` should point to the private key and the public key should have the same name, with a '.pub'
    *   extension added.`
    */
