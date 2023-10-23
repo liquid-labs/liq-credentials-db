@@ -168,7 +168,8 @@ class CredentialsDB {
     }
 
     const result = detail.getTokenFunc({ files : detail.files })
-    if (result.then) {
+    console.log('result:', result)
+    if (result.then !== undefined) {
       return await result
     }
     else {
