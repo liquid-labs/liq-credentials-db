@@ -100,16 +100,21 @@ class CredentialsDB {
    *   be a directory path (unlike `srcPath` which points to a file)..
    * - `key`: (req, string) the key name
    * - `noVerify`: (opt, boolean; default: false) if true, then verification of the imported key is skipped
+   * - `replace`: (opt, boolean; default: false) must be set to true when replacing a key or results in error. 
+   *   Likewise, must be 'false' with a new key or raises an error.
    * - `srcPath`: (req, path-string) path to the credential file (or primary credential file). For 'SSH_KEY_PAIR' type 
    *   keys, the `srcPath` should point to the private key and the public key should have the same name, with a '.pub'
    *   extension added.`
    */
-  async import({ destPath, key, noVerify = false, replace, srcPath }) {
+  async import({ destPath, key, noVerify = false, replace = false, srcPath }) {
     const credSpec = this.getCredSpec(key,
       { required : true, msgGen : ({ key }) => `Cannot import unknown credential type '${key}'.` })
 
     if (this.#db[key] !== undefined && replace !== true) {
       throw new Error(`Credential '${key}' already exists; set 'replace' to true to update the entry.`)
+    }
+    else if (this.#db[key] === undefined && replace !== false) {
+      throw new Error(`Credential '${key}' does not exist in DB; 'replace' must be 'false' (default).`)
     }
 
     if (!Object.values(types).includes(credSpec.type)) {
@@ -118,19 +123,20 @@ class CredentialsDB {
 
     const files = []
 
-    if (destPath !== undefined && fsPath.resolve(destPath) !== fsPath.resolve(fsPath.dirName(srcPath))) {
+    if (destPath !== undefined) {
       await fs.mkdir(destPath, { recursive : true })
+      const mode = replace === true ? 0 : fs.constants.COPYFILE_EXCL
       if (credSpec.type === types.SSH_KEY_PAIR) {
         const privKeyPath = fsPath.join(destPath, key)
         const pubKeyPath = fsPath.join(destPath, key + '.pub')
-        await fs.copyFile(srcPath, privKeyPath, { mode : fs.constants.COPYFILE_EXCL })
-        await fs.copyFile(srcPath + '.pub', pubKeyPath, { mode : fs.constants.COPYFILE_EXCL })
+        await fs.copyFile(srcPath, privKeyPath, mode)
+        await fs.copyFile(srcPath + '.pub', pubKeyPath, mode)
         files.push(privKeyPath)
         files.push(pubKeyPath)
       }
       else if (credSpec.type === types.AUTH_TOKEN) {
-        const tokenPath = fsPath.join(destPath, key + types.AUTH_TOKEN)
-        await fs.copyFile(srcPath, tokenPath, { mode : fs.constants.COPYFILE_EXCL })
+        const tokenPath = fsPath.join(destPath, key)
+        await fs.copyFile(srcPath, tokenPath, mode)
         files.push(tokenPath)
       }
     }
@@ -170,7 +176,6 @@ class CredentialsDB {
     }
 
     const result = detail.getTokenFunc({ files : detail.files })
-    console.log('result:', result)
     if (result.then !== undefined) {
       return await result
     }
