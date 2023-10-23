@@ -1,9 +1,10 @@
+import { readFileSync } from 'node:fs'
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
 import createError from 'http-errors'
+import yaml from 'js-yaml'
 
-import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
 import { LIQ_HOME } from '@liquid-labs/liq-defaults'
 
 import { CREDS_DB_CACHE_KEY, CREDS_PATH_STEM, status, types } from './constants'
@@ -17,7 +18,7 @@ class CredentialsDB {
   #dbPath
   #supportedCredentials = []
 
-  constructor({ cache }) {
+  constructor({ cache } = {}) {
     this.#dbPath = process.env.LIQ_CREDENTIALS_DB_PATH
       || /* default */ fsPath.join(LIQ_HOME(), CREDS_PATH_STEM, 'db.yaml')
 
@@ -29,26 +30,46 @@ class CredentialsDB {
   resetDB() {
     let db = this.#cache?.get(CREDS_DB_CACHE_KEY)
     if (!db) { // load the DB from path
-      ([db] = readFJSON(this.#dbPath, { createOnNone : {}, separateMeta : true }))
-      this.#cache.put(CREDS_DB_CACHE_KEY, db)
+      try {
+        const dataContents = readFileSync(this.#dbPath, { encoding: 'utf8' })
+        db = yaml.load(dataContents)
+      }
+      catch (e) {
+        if (e.code === 'ENOENT') {
+          db = {}
+        }
+        else {
+          throw e
+        }
+      }
+
+      if (this.#cache !== undefined) {
+        this.#cache.put(CREDS_DB_CACHE_KEY, db)
+      }
     }
 
     this.#db = db
   }
 
-  writeDB() {
-    const writableDB = structuredClone(this.#db)
-    for (const spec of Object.values(writableDB)) {
+  async writeDB() {
+    const writeableDB = structuredClone(this.#db)
+
+    for (const spec of Object.values(writeableDB)) {
       delete spec.description
       delete spec.name
     }
 
-    writeFJSON({ file : this.#dbPath, data : writableDB })
+    const dbContents = yaml.dump(writeableDB)
+    await fs.writeFile(this.#dbPath, dbContents)
   }
 
   detail(key, { required = false, retainFuncs = false } = {}) {
-    if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) { throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`) }
-    if (!(key in this.#db)) { throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) }
+    if (!this.#supportedCredentials.some(({ key : supportedKey }) => key === supportedKey)) { 
+      throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`)
+    }
+    if (!(key in this.#db)) { 
+      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`) 
+    }
 
     const baseData = this.getCredSpec(key)
     if (baseData === undefined) return
@@ -109,7 +130,10 @@ class CredentialsDB {
       }
     }
 
-    this.#db[key] = Object.assign({}, credSpec, { files, status : status.SET_BUT_UNTESTED })
+    const credSpecCopy = Object.assign({}, credSpec)
+    delete credSpecCopy.verifyFunc
+    delete credSpecCopy.getTokenFunc
+    this.#db[key] = Object.assign({}, credSpecCopy, { files, status : status.SET_BUT_UNTESTED })
 
     if (noVerify === false) {
       try {
@@ -121,16 +145,26 @@ class CredentialsDB {
       }
     }
 
-    this.writeDB()
+    await this.writeDB()
   }
 
-  getToken(key) {
+  async getToken(key) {
     const detail = this.detail(key, { required : true, retainFuncs : true })
-    if (detail.type !== types.AUTH_TOKEN) { throw createError.BadRequest(`Credential '${specName(detail)}' does not provide an authorization token.`) }
+    if (detail.type !== types.AUTH_TOKEN) { 
+      throw createError.BadRequest(`Credential '${specName(detail)}' does not provide an authorization token.`)
+    }
 
-    if (detail.getTokenFunc === undefined) { throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`) }
+    if (detail.getTokenFunc === undefined) { 
+      throw createError.NotImplemented(`Credential '${specName(detail)}' does not support token retrieval.`) 
+    }
 
-    return detail.getTokenFunc({ files : detail.files })
+    const result = detail.getTokenFunc({ files : detail.files })
+    if (result.then) {
+      return await result
+    }
+    else {
+      return result
+    }
   }
 
   list() {

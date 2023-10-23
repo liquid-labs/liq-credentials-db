@@ -27,10 +27,10 @@
     "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.20"
   },
   "dependencies": {
-    "@liquid-labs/federated-json": "^1.0.0-alpha.34",
     "@liquid-labs/github-toolkit": "^1.0.0-alpha.11",
     "@liquid-labs/liq-defaults": "^1.0.0-alpha.2",
     "http-errors": "^2.0.0",
+    "js-yaml": "^4.1.0",
     "shelljs": "^0.8.5"
   },
   "liq": {
