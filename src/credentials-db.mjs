@@ -5,8 +5,6 @@ import * as fsPath from 'node:path'
 import createError from 'http-errors'
 import yaml from 'js-yaml'
 
-import { LIQ_HOME } from '@liquid-labs/liq-defaults'
-
 import { CREDS_DB_CACHE_KEY, CREDS_PATH_STEM, status, types } from './constants'
 
 class CredentialsDB {
@@ -18,9 +16,9 @@ class CredentialsDB {
   #dbPath
   #supportedCredentials = []
 
-  constructor({ cache } = {}) {
+  constructor({ app, cache } = {}) {
     this.#dbPath = process.env.LIQ_CREDENTIALS_DB_PATH
-      || /* default */ fsPath.join(LIQ_HOME(), CREDS_PATH_STEM, 'db.yaml')
+      || /* default */ fsPath.join(app.ext.serverHome, CREDS_PATH_STEM, 'db.yaml')
 
     this.#cache = cache
 

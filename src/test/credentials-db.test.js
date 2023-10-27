@@ -20,6 +20,8 @@ const bogusAuthTokenSpec = {
   getTokenFunc : async({ files }) => (await fs.readFile(files[0], { encoding : 'utf8' })).trim()
 }
 
+const testDBPath = fsPath.join(__dirname, 'data', 'test-db.yaml')
+
 describe('CredentialsDB', () => {
   describe('constructor', () => {
     test('attempts to load DB from cache', () => {
@@ -28,14 +30,15 @@ describe('CredentialsDB', () => {
         get(key) { getWasCalledWith = key; return {} }
       }
 
-      new CredentialsDB({ cache }) // eslint-disable-line no-new
+      const app = { ext : { serverHome : testDBPath } }
+
+      new CredentialsDB({ app, cache }) // eslint-disable-line no-new
       expect(getWasCalledWith).toBe(CREDS_DB_CACHE_KEY)
     })
   })
 
   describe('key lifecycle', () => {
     const authTokenPath = fsPath.join(__dirname, 'data', 'bogus-api-token.yaml')
-    const testDBPath = fsPath.join(__dirname, 'data', 'test-db.yaml')
     let credDB
 
     beforeAll(async() => {
