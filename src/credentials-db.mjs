@@ -66,7 +66,7 @@ class CredentialsDB {
       throw createError.BadRequest(`'${key}' is not a valid credential. Perhaps there is a missing plugin?`)
     }
     if (!(key in this.#db)) {
-      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\nliq credentials import ${key} -- srcPath=/path/to/credential/file`)
+      throw createError.NotFound(`Credential '${key}' is not stored. Try:\n\n[CLI] credentials import ${key} -- path=/path/to/credential/file`)
     }
 
     const baseData = this.getCredSpec(key)
