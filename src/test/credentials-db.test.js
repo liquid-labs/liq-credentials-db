@@ -30,9 +30,7 @@ describe('CredentialsDB', () => {
         get(key) { getWasCalledWith = key; return {} }
       }
 
-      const app = { ext : { serverHome : testDBPath } }
-
-      new CredentialsDB({ app, cache }) // eslint-disable-line no-new
+      new CredentialsDB({ app : {}, cache, serverConfigRoot : testDBPath }) // eslint-disable-line no-new
       expect(getWasCalledWith).toBe(CREDS_DB_CACHE_KEY)
     })
   })

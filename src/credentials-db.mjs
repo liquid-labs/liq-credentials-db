@@ -16,9 +16,9 @@ class CredentialsDB {
   #dbPath
   #supportedCredentials = []
 
-  constructor({ app, cache } = {}) {
+  constructor({ cache, serverConfigRoot } = {}) {
     this.#dbPath = process.env.LIQ_CREDENTIALS_DB_PATH
-      || /* default */ fsPath.join(app.ext.serverHome, CREDS_PATH_STEM, 'db.yaml')
+      || /* default */ fsPath.join(serverConfigRoot, CREDS_PATH_STEM, 'db.yaml')
 
     this.#cache = cache
 
